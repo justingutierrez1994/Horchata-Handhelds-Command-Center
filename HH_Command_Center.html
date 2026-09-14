@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark" />
+  <title>HH Notion OS — Horchata's Handhelds Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest" defer></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            base: { 900: '#0f1117', 800: '#141622', 700: '#1a1d2e', 600: '#222640', 500: '#2a2e4a' },
+            card: { DEFAULT: '#1a1d2e', light: '#222640', lighter: '#2a2e4a', border: 'rgba(255,255,255,0.06)' },
+            brand: { DEFAULT: '#f59e0b', light: '#fbbf24', dark: '#d97706', dim: 'rgba(245,158,11,0.15)', dimmer: 'rgba(245,158,11,0.08)' },
+            profit: { DEFAULT: '#10b981', light: '#34d399', dark: '#059669', dim: 'rgba(16,185,129,0.15)' },
+            expense: { DEFAULT: '#f43f5e', light: '#fb7185', dark: '#e11d48', dim: 'rgba(244,63,94,0.15)' },
+            info: { DEFAULT: '#38bdf8', light: '#7dd3fc', dark: '#0ea5e9', dim: 'rgba(56,189,248,0.15)' },
+            txt: { 100: '#f1f5f9', 200: '#cbd5e1', 300: '#94a3b8', 400: '#64748b', 500: '#475569' },
+            purple: { DEFAULT: '#a78bfa', dim: 'rgba(167,139,250,0.15)' },
+          },
+          borderRadius: { '2xl': '1rem', '3xl': '1.25rem' },
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body { background: #0f1117; color: #f1f5f9; font-family: 'Inter', sans-serif; margin: 0; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+    .sidebar-link { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; color: #94a3b8; cursor: pointer; transition: all .15s; white-space: nowrap; }
+    .sidebar-link:hover { background: rgba(255,255,255,0.05); color: #cbd5e1; }
+    .sidebar-link.active { background: rgba(245,158,11,0.12); color: #fbbf24; }
+    .section-panel { display: none; opacity: 0; transition: opacity .2s; }
+    .section-panel.active { display: block; opacity: 1; }
+    .kpi-card { background: #1a1d2e; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 20px; }
+    .filter-chip { padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid rgba(255,255,255,0.08); background: transparent; color: #94a3b8; transition: all .15s; }
+    .filter-chip:hover { border-color: rgba(245,158,11,0.3); color: #cbd5e1; }
+    .filter-chip.active { background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.4); color: #fbbf24; }
+    .data-table { width: 100%; text-align: left; border-collapse: collapse; }
+    .data-table thead th { padding: 10px 14px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; background: #141622; cursor: pointer; user-select: none; white-space: nowrap; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .data-table tbody td { padding: 10px 14px; font-size: 13px; color: #cbd5e1; border-bottom: 1px solid rgba(255,255,255,0.04); white-space: nowrap; }
+    .data-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+    .status-badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; display: inline-block; }
+    .expand-row { display: none; }
+    .expand-row.open { display: table-row; }
+    .copy-btn { padding: 4px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; background: rgba(245,158,11,0.12); color: #fbbf24; border: none; transition: all .15s; }
+    .copy-btn:hover { background: rgba(245,158,11,0.25); }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; display: none; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal-box { background: #1a1d2e; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 28px; width: 90%; max-width: 480px; max-height: 85vh; overflow-y: auto; }
+    .form-input { width: 100%; background: #141622; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 9px 12px; color: #f1f5f9; font-size: 13px; outline: none; transition: border-color .15s; }
+    .form-input:focus { border-color: rgba(245,158,11,0.4); }
+    .form-label { font-size: 12px; font-weight: 500; color: #94a3b8; margin-bottom: 4px; display: block; }
+    .accordion-header { cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: #1a1d2e; border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; margin-bottom: 6px; transition: all .15s; }
+    .accordion-header:hover { background: #222640; }
+    .accordion-body { display: none; padding: 14px 18px; background: #141622; border: 1px solid rgba(255,255,255,0.04); border-radius: 0 0 10px 10px; margin-top: -6px; margin-bottom: 10px; }
+    .accordion-body.open { display: block; }
+    .progress-bar-bg { height: 8px; background: #141622; border-radius: 4px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
+    .tab-btn-ai { padding: 8px 18px; font-size: 13px; font-weight: 500; border-radius: 8px; cursor: pointer; border: 1px solid rgba(255,255,255,0.06); background: transparent; color: #94a3b8; transition: all .15s; }
+    .tab-btn-ai:hover { color: #cbd5e1; }
+    .tab-btn-ai.active { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.3); color: #fbbf24; }
+    @media (max-width: 767px) {
+      .sidebar-desktop { display: none !important; }
+      .main-content { margin-left: 0 !important; }
+    }
+    .prompt-block { background: #0f1117; border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 14px; font-family: 'Inter', monospace; font-size: 12px; color: #94a3b8; line-height: 1.6; white-space: pre-wrap; word-break: break-word; max-height: 300px; overflow-y: auto; }
+  </style>
+</head>
+<body data-id="0" class="min-h-screen">
+  <app-icon data-id="1" hidden data-icon="gamepad-2" data-palette="Yellow"></app-icon>
+
+  <!-- Mobile Header -->
+  <header data-id="2" class="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3" style="background:#0f1117;border-bottom:1px solid rgba(255,255,255,0.06)">
+    <div data-id="3" class="flex items-center gap-2">
+      <span data-id="4" class="text-xl">🌮</span>
+      <span data-id="5" class="text-sm font-bold text-brand">HH Notion OS</span>
+    </div>
+    <button data-id="6" id="mobile-menu-btn-z8k3" class="p-2 text-txt-300"><i data-id="7" data-lucide="menu" class="w-6 h-6"></i></button>
+  </header>
+
+  <!-- Mobile Nav Overlay -->
+  <nav data-id="8" id="mobile-nav-x9m2" class="hidden fixed inset-0 z-[60] flex flex-col p-5 overflow-y-auto" style="background:#0f1117">
+    <div data-id="9" class="flex items-center justify-between mb-6">
+      <div data-id="10" class="flex items-center gap-2"><span data-id="11" class="text-xl">🌮</span><span data-id="12" class="text-sm font-bold text-brand">HH Notion OS</span></div>
+      <button data-id="13" id="mobile-nav-close-q4w1" class="p-2 text-txt-300"><i data-id="14" data-lucide="x" class="w-6 h-6"></i></button>
+    </div>
+    <div data-id="15" id="mobile-nav-links-r7t5" class="flex flex-col gap-1"></div>
+  </nav>
+
+  <!-- Sidebar (Desktop) -->
+  <aside data-id="16" class="sidebar-desktop fixed top-0 left-0 bottom-0 w-[220px] z-40 flex flex-col py-5 px-3 overflow-y-auto" style="background:#0f1117;border-right:1px solid rgba(255,255,255,0.06)">
+    <div data-id="17" class="flex items-center gap-2 px-3 mb-6">
+      <span data-id="18" class="text-2xl">🌮</span>
+      <div data-id="19">
+        <div data-id="20" class="text-sm font-bold text-brand-light leading-tight">HH Notion OS</div>
+        <div data-id="21" class="text-[10px] text-txt-400 leading-tight">Horchata's Handhelds</div>
+      </div>
+    </div>
+    <nav data-id="22" id="sidebar-nav-a1b2" class="flex flex-col gap-[2px]"></nav>
+    <div data-id="23" class="mt-auto px-3 pt-6">
+      <div data-id="24" class="text-[10px] text-txt-500">Sep 11, 2026 · Justin</div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main data-id="25" class="main-content md:ml-[220px] min-h-screen pt-14 md:pt-0">
+    <div data-id="26" class="max-w-[1280px] mx-auto p-4 md:p-8">
+
+      <!-- Section 1: Command Center -->
+      <div data-id="27" id="section-dashboard" class="section-panel active">
+        <div data-id="28" class="mb-6">
+          <h1 data-id="29" class="text-2xl md:text-3xl font-bold text-txt-100">Command Center</h1>
+          <p data-id="30" class="text-sm text-txt-400 mt-1">Executive overview · Friday, Sep 11 2026</p>
+        </div>
+
+        <!-- KPI Row -->
+        <div data-id="31" class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
+          <div data-id="32" class="kpi-card">
+            <div data-id="33" class="flex items-center gap-2 mb-2"><i data-id="34" data-lucide="package" class="w-4 h-4 text-brand"></i><span data-id="35" class="text-[11px] font-medium uppercase tracking-wide text-txt-400">Inventory Value</span></div>
+            <div data-id="36" class="text-2xl font-bold text-txt-100 tabular-nums">$4,280</div>
+            <div data-id="37" class="text-xs text-profit mt-1 flex items-center gap-1"><i data-id="38" data-lucide="trending-up" class="w-3 h-3"></i> +12% vs last month</div>
+          </div>
+          <div data-id="39" class="kpi-card">
+            <div data-id="40" class="flex items-center gap-2 mb-2"><i data-id="41" data-lucide="dollar-sign" class="w-4 h-4 text-profit"></i><span data-id="42" class="text-[11px] font-medium uppercase tracking-wide text-txt-400">Month Net Profit</span></div>
+            <div data-id="43" class="text-2xl font-bold text-profit tabular-nums">$1,847</div>
+            <div data-id="44" class="text-xs text-profit mt-1 flex items-center gap-1"><i data-id="45" data-lucide="trending-up" class="w-3 h-3"></i> +8% vs Aug</div>
+          </div>
+          <div data-id="46" class="kpi-card">
+            <div data-id="47" class="flex items-center gap-2 mb-2"><i data-id="48" data-lucide="wrench" class="w-4 h-4 text-info"></i><span data-id="49" class="text-[11px] font-medium uppercase tracking-wide text-txt-400">Active Refurbs</span></div>
+            <div data-id="50" class="text-2xl font-bold text-txt-100 tabular-nums">3</div>
+            <div data-id="51" class="text-xs text-txt-400 mt-1">2 in progress · 1 queued</div>
+          </div>
+          <div data-id="52" class="kpi-card">
+            <div data-id="53" class="flex items-center gap-2 mb-2"><i data-id="54" data-lucide="radar" class="w-4 h-4 text-brand"></i><span data-id="55" class="text-[11px] font-medium uppercase tracking-wide text-txt-400">Watchlist Items</span></div>
+            <div data-id="56" class="text-2xl font-bold text-txt-100 tabular-nums">12</div>
+            <div data-id="57" class="text-xs text-brand mt-1">3 hot · 6 active</div>
+          </div>
+        </div>
+
+        <!-- Quick Add Buttons -->
+        <div data-id="58" class="flex flex-wrap gap-2 mb-6">
+          <button data-id="59" class="quick-add-btn flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-brand-dim text-brand-light border border-brand/20 hover:bg-brand/20 transition" data-modal="inventory">
+            <i data-id="60" data-lucide="plus" class="w-3.5 h-3.5"></i> Add Inventory
+          </button>
+          <button data-id="61" class="quick-add-btn flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-expense-dim text-expense-light border border-expense/20 hover:bg-expense/20 transition" data-modal="expense">
+            <i data-id="62" data-lucide="plus" class="w-3.5 h-3.5"></i> Log Expense
+          </button>
+          <button data-id="63" class="quick-add-btn flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-profit-dim text-profit-light border border-profit/20 hover:bg-profit/20 transition" data-modal="sale">
+            <i data-id="64" data-lucide="plus" class="w-3.5 h-3.5"></i> Log Sale
+          </button>
+          <button data-id="65" class="quick-add-btn flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-info-dim text-info-light border border-info/20 hover:bg-info/20 transition" data-modal="watchlist">
+            <i data-id="66" data-lucide="plus" class="w-3.5 h-3.5"></i> Add to Watchlist
+          </button>
+        </div>
+
+        <div data-id="67" class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+          <!-- Today's Focus -->
+          <div data-id="68" class="kpi-card lg:col-span-1">
+            <div data-id="69" class="flex items-center gap-2 mb-4"><i data-id="70" data-lucide="target" class="w-4 h-4 text-brand"></i><span data-id="71" class="text-sm font-semibold text-txt-100">Today's Focus</span></div>
+            <div data-id="72" class="flex flex-col gap-3">
+              <div data-id="73" class="flex items-start gap-3"><div data-id="74" class="w-5 h-5 rounded-full bg-brand-dim flex items-center justify-center flex-shrink-0 mt-0.5"><span data-id="75" class="text-[10px] font-bold text-brand">1</span></div><div data-id="76"><div data-id="77" class="text-sm text-txt-200">List PSP Go refurb on eBay</div><div data-id="78" class="text-[11px] text-txt-400 mt-0.5">Battery fix complete — est. $120 listing</div></div></div>
+              <div data-id="79" class="flex items-start gap-3"><div data-id="80" class="w-5 h-5 rounded-full bg-info-dim flex items-center justify-center flex-shrink-0 mt-0.5"><span data-id="81" class="text-[10px] font-bold text-info">2</span></div><div data-id="82"><div data-id="83" class="text-sm text-txt-200">Check YLOD fix on PS3 Slim</div><div data-id="84" class="text-[11px] text-txt-400 mt-0.5">Reflow attempt queued since Sep 4</div></div></div>
+              <div data-id="85" class="flex items-start gap-3"><div data-id="86" class="w-5 h-5 rounded-full bg-expense-dim flex items-center justify-center flex-shrink-0 mt-0.5"><span data-id="87" class="text-[10px] font-bold text-expense">3</span></div><div data-id="88"><div data-id="89" class="text-sm text-txt-200">Log shipping cost for GBA SP batch</div><div data-id="90" class="text-[11px] text-txt-400 mt-0.5">3 units shipped this week — receipts pending</div></div></div>
+            </div>
+          </div>
+
+          <!-- Recent Sales -->
+          <div data-id="91" class="kpi-card lg:col-span-2">
+            <div data-id="92" class="flex items-center gap-2 mb-4"><i data-id="93" data-lucide="receipt" class="w-4 h-4 text-profit"></i><span data-id="94" class="text-sm font-semibold text-txt-100">Recent Sales</span></div>
+            <div data-id="95" class="overflow-x-auto">
+              <table data-id="96" class="data-table">
+                <thead data-id="97"><tr data-id="98"><th data-id="99">Device</th><th data-id="100">Sale Price</th><th data-id="101">Profit</th><th data-id="102">Date</th></tr></thead>
+                <tbody data-id="103">
+                  <tr data-id="104"><td data-id="105" class="text-txt-100 font-medium">GBA SP (Gold)</td><td data-id="106" class="tabular-nums">$145</td><td data-id="107" class="text-profit tabular-nums">+$82</td><td data-id="108" class="text-txt-400">Sep 9</td></tr>
+                  <tr data-id="109"><td data-id="110" class="text-txt-100 font-medium">PS Vita Slim</td><td data-id="111" class="tabular-nums">$210</td><td data-id="112" class="text-profit tabular-nums">+$134</td><td data-id="113" class="text-txt-400">Sep 7</td></tr>
+                  <tr data-id="114"><td data-id="115" class="text-txt-100 font-medium">PSP 3000 (Red)</td><td data-id="116" class="tabular-nums">$88</td><td data-id="117" class="text-profit tabular-nums">+$41</td><td data-id="118" class="text-txt-400">Sep 5</td></tr>
+                  <tr data-id="119"><td data-id="120" class="text-txt-100 font-medium">Game Boy Pocket</td><td data-id="121" class="tabular-nums">$95</td><td data-id="122" class="text-profit tabular-nums">+$68</td><td data-id="123" class="text-txt-400">Sep 3</td></tr>
+                  <tr data-id="124"><td data-id="125" class="text-txt-100 font-medium">DS Lite (White)</td><td data-id="126" class="tabular-nums">$72</td><td data-id="127" class="text-profit tabular-nums">+$38</td><td data-id="128" class="text-txt-400">Sep 1</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hot Picks -->
+        <div data-id="129" class="mb-6">
+          <div data-id="130" class="flex items-center gap-2 mb-4"><i data-id="131" data-lucide="flame" class="w-4 h-4 text-brand"></i><span data-id="132" class="text-sm font-semibold text-txt-100">Hot Picks This Week</span></div>
+          <div data-id="133" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div data-id="134" class="kpi-card border-brand/20">
+              <div data-id="135" class="text-sm font-semibold text-txt-100 mb-2">Game Boy Color</div>
+              <div data-id="136" class="grid grid-cols-3 gap-2 text-center">
+                <div data-id="137"><div data-id="138" class="text-xs text-txt-400">Avg Sell</div><div data-id="139" class="text-sm font-bold text-profit tabular-nums">$92</div></div>
+                <div data-id="140"><div data-id="141" class="text-xs text-txt-400">Avg Buy</div><div data-id="142" class="text-sm font-bold text-expense tabular-nums">$12</div></div>
+                <div data-id="143"><div data-id="144" class="text-xs text-txt-400">Margin</div><div data-id="145" class="text-sm font-bold text-brand tabular-nums">72%</div></div>
+              </div>
+            </div>
+            <div data-id="146" class="kpi-card border-brand/20">
+              <div data-id="147" class="text-sm font-semibold text-txt-100 mb-2">PS Vita 1000</div>
+              <div data-id="148" class="grid grid-cols-3 gap-2 text-center">
+                <div data-id="149"><div data-id="150" class="text-xs text-txt-400">Avg Sell</div><div data-id="151" class="text-sm font-bold text-profit tabular-nums">$195</div></div>
+                <div data-id="152"><div data-id="153" class="text-xs text-txt-400">Avg Buy</div><div data-id="154" class="text-sm font-bold text-expense tabular-nums">$45</div></div>
+                <div data-id="155"><div data-id="156" class="text-xs text-txt-400">Margin</div><div data-id="157" class="text-sm font-bold text-brand tabular-nums">68%</div></div>
+              </div>
+            </div>
+            <div data-id="158" class="kpi-card border-brand/20">
+              <div data-id="159" class="text-sm font-semibold text-txt-100 mb-2">GBA Micro</div>
+              <div data-id="160" class="grid grid-cols-3 gap-2 text-center">
+                <div data-id="161"><div data-id="162" class="text-xs text-txt-400">Avg Sell</div><div data-id="163" class="text-sm font-bold text-profit tabular-nums">$215</div></div>
+                <div data-id="164"><div data-id="165" class="text-xs text-txt-400">Avg Buy</div><div data-id="166" class="text-sm font-bold text-expense tabular-nums">$50</div></div>
+                <div data-id="167"><div data-id="168" class="text-xs text-txt-400">Margin</div><div data-id="169" class="text-sm font-bold text-brand tabular-nums">65%</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Inventory DB -->
+      <div data-id="170" id="section-inventory" class="section-panel">
+        <div data-id="171" class="mb-6">
+          <h1 data-id="172" class="text-2xl md:text-3xl font-bold text-txt-100">Inventory Database</h1>
+          <p data-id="173" class="text-sm text-txt-400 mt-1">Full inventory tracking with schema reference</p>
+        </div>
+
+        <!-- Schema Reference -->
+        <details data-id="174" class="mb-5">
+          <summary data-id="175" class="text-sm font-medium text-brand cursor-pointer hover:text-brand-light transition flex items-center gap-2"><i data-id="176" data-lucide="file-code" class="w-4 h-4"></i> View DB Schema</summary>
+          <div data-id="177" class="mt-3 kpi-card text-xs text-txt-300 leading-relaxed">
+            <div data-id="178" class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
+              <div data-id="179"><span data-id="180" class="text-txt-100 font-medium">Device Name</span> — Title</div>
+              <div data-id="181"><span data-id="182" class="text-txt-100 font-medium">Condition</span> — Select: Untested / Working / For Parts / Refurbed</div>
+              <div data-id="183"><span data-id="184" class="text-txt-100 font-medium">SKU</span> — Text (HH-###)</div>
+              <div data-id="185"><span data-id="186" class="text-txt-100 font-medium">Buy Price</span> — Number ($)</div>
+              <div data-id="187"><span data-id="188" class="text-txt-100 font-medium">Listed Price</span> — Number ($)</div>
+              <div data-id="189"><span data-id="190" class="text-txt-100 font-medium">Platform</span> — Select: GBA / PSP / PS Vita / DS / 3DS / PS3 / Other</div>
+              <div data-id="191"><span data-id="192" class="text-txt-100 font-medium">Source</span> — Select: eBay / FB Marketplace / Thrift / Bulk Lot / Goodwill</div>
+              <div data-id="193"><span data-id="194" class="text-txt-100 font-medium">Date Acquired</span> — Date</div>
+              <div data-id="195"><span data-id="196" class="text-txt-100 font-medium">Status</span> — Select: In Stock / Listed / Sold / In Refurb / Parts</div>
+              <div data-id="197"><span data-id="198" class="text-txt-100 font-medium">Notes</span> — Text</div>
+              <div data-id="199"><span data-id="200" class="text-txt-100 font-medium">COGS</span> — Formula (Buy Price + Parts)</div>
+              <div data-id="201"><span data-id="202" class="text-txt-100 font-medium">Potential Profit</span> — Formula (Listed - Buy - Est. Fees)</div>
+            </div>
+          </div>
+        </details>
+
+        <!-- Filters -->
+        <div data-id="203" class="mb-4">
+          <div data-id="204" class="text-[11px] font-medium text-txt-400 uppercase tracking-wide mb-2">Filter by Status</div>
+          <div data-id="205" class="flex flex-wrap gap-2 mb-3" id="inv-status-filters-m3n4">
+            <button data-id="206" class="filter-chip active" data-filter="all">All</button>
+            <button data-id="207" class="filter-chip" data-filter="In Stock">In Stock</button>
+            <button data-id="208" class="filter-chip" data-filter="Listed">Listed</button>
+            <button data-id="209" class="filter-chip" data-filter="Sold">Sold</button>
+            <button data-id="210" class="filter-chip" data-filter="In Refurb">In Refurb</button>
+            <button data-id="211" class="filter-chip" data-filter="Parts">Parts</button>
+          </div>
+          <div data-id="212" class="text-[11px] font-medium text-txt-400 uppercase tracking-wide mb-2">Filter by Platform</div>
+          <div data-id="213" class="flex flex-wrap gap-2" id="inv-platform-filters-k5l6">
+            <button data-id="214" class="filter-chip active" data-filter="all">All</button>
+            <button data-id="215" class="filter-chip" data-filter="GBA">GBA</button>
+            <button data-id="216" class="filter-chip" data-filter="PSP">PSP</button>
+            <button data-id="217" class="filter-chip" data-filter="PS Vita">PS Vita</button>
+            <button data-id="218" class="filter-chip" data-filter="DS">DS</button>
+            <button data-id="219" class="filter-chip" data-filter="3DS">3DS</button>
+            <button data-id="220" class="filter-chip" data-filter="PS3">PS3</button>
+          </div>
+        </div>
+
+        <div data-id="221" class="text-xs text-txt-400 mb-2" id="inv-count-j7h8">Showing 10 items</div>
+        <div data-id="222" class="overflow-x-auto rounded-xl" style="border:1px solid rgba(255,255,255,0.06)">
+          <table data-id="223" class="data-table" id="inv-table-p9q0">
+            <thead data-id="224"><tr data-id="225">
+              <th data-id="226" data-sort="name">Device <i data-id="227" data-lucide="chevrons-up-down" class="w-3 h-3 inline"></i></th>
+              <th data-id="228" data-sort="condition">Condition</th>
+              <th data-id="229">SKU</th>
+              <th data-id="230" data-sort="buy">Buy $</th>
+              <th data-id="231" data-sort="listed">Listed $</th>
+              <th data-id="232">Platform</th>
+              <th data-id="233">Source</th>
+              <th data-id="234">Date</th>
+              <th data-id="235" data-sort="status">Status</th>
+              <th data-id="236">Profit Est.</th>
+            </tr></thead>
+            <tbody data-id="237" id="inv-tbody-r1s2"></tbody>
+          </table>
+        </div>
+
+        <!-- Detail Card (hidden by default) -->
+        <div data-id="238" id="inv-detail-card-t3u4" class="hidden mt-4 kpi-card">
+          <div data-id="239" class="flex items-center justify-between mb-4">
+            <h3 data-id="240" class="text-lg font-bold text-txt-100" id="inv-detail-title-v5w6">—</h3>
+            <button data-id="241" id="inv-detail-close-x7y8" class="text-txt-400 hover:text-txt-200"><i data-id="242" data-lucide="x" class="w-5 h-5"></i></button>
+          </div>
+          <div data-id="243" id="inv-detail-body-z9a0" class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm"></div>
+        </div>
+      </div>
+
+      <!-- Section 3: Refurb Log -->
+      <div data-id="244" id="section-refurb" class="section-panel">
+        <div data-id="245" class="mb-6">
+          <h1 data-id="246" class="text-2xl md:text-3xl font-bold text-txt-100">Refurb Log Database</h1>
+          <p data-id="247" class="text-sm text-txt-400 mt-1">Repair tracking with parts costs and labor</p>
+        </div>
+        <details data-id="248" class="mb-5">
+          <summary data-id="249" class="text-sm font-medium text-brand cursor-pointer hover:text-brand-light transition flex items-center gap-2"><i data-id="250" data-lucide="file-code" class="w-4 h-4"></i> View DB Schema</summary>
+          <div data-id="251" class="mt-3 kpi-card text-xs text-txt-300 leading-relaxed">
+            <div data-id="252" class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
+              <div data-id="253"><span data-id="254" class="text-txt-100 font-medium">Job Title</span> — Title</div>
+              <div data-id="255"><span data-id="256" class="text-txt-100 font-medium">Device</span> — Relation → Inventory</div>
+              <div data-id="257"><span data-id="258" class="text-txt-100 font-medium">Issue</span> — Multi-select: Battery/Screen/Buttons/Shell/YLOD/Backlight/Charging Port/Other</div>
+              <div data-id="259"><span data-id="260" class="text-txt-100 font-medium">Parts Ordered</span> — Text</div>
+              <div data-id="261"><span data-id="262" class="text-txt-100 font-medium">Parts Cost</span> — Number ($)</div>
+              <div data-id="263"><span data-id="264" class="text-txt-100 font-medium">Hours Spent</span> — Number</div>
+              <div data-id="265"><span data-id="266" class="text-txt-100 font-medium">Labor Rate</span> — Number ($/hr)</div>
+              <div data-id="267"><span data-id="268" class="text-txt-100 font-medium">Repair Notes</span> — Text</div>
+              <div data-id="269"><span data-id="270" class="text-txt-100 font-medium">Status</span> — Select: Queued/In Progress/Complete/Abandoned</div>
+              <div data-id="271"><span data-id="272" class="text-txt-100 font-medium">Outcome</span> — Select: Pass/Fail/Parts Salvaged</div>
+              <div data-id="273"><span data-id="274" class="text-txt-100 font-medium">Total Cost Added</span> — Formula: Parts Cost + Hours×Labor Rate</div>
+            </div>
+          </div>
+        </details>
+        <div data-id="275" class="overflow-x-auto rounded-xl" style="border:1px solid rgba(255,255,255,0.06)">
+          <table data-id="276" class="data-table">
+            <thead data-id="277"><tr data-id="278"><th data-id="279">Job</th><th data-id="280">Device</th><th data-id="281">Issue</th><th data-id="282">Parts</th><th data-id="283">Parts $</th><th data-id="284">Hours</th><th data-id="285">Total Cost</th><th data-id="286">Status</th><th data-id="287">Outcome</th></tr></thead>
+            <tbody data-id="288" id="refurb-tbody-b1c2"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Section 4: Expenses DB -->
+      <div data-id="289" id="section-expenses" class="section-panel">
+        <div data-id="290" class="mb-6">
+          <h1 data-id="291" class="text-2xl md:text-3xl font-bold text-txt-100">Expenses Database</h1>
+          <p data-id="292" class="text-sm text-txt-400 mt-1">Complete expense ledger with category tracking</p>
+        </div>
+        <details data-id="293" class="mb-5">
+          <summary data-id="294" class="text-sm font-medium text-brand cursor-pointer hover:text-brand-light transition flex items-center gap-2"><i data-id="295" data-lucide="file-code" class="w-4 h-4"></i> View DB Schema</summary>
+          <div data-id="296" class="mt-3 kpi-card text-xs text-txt-300 leading-relaxed">
+            <div data-id="297" class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
+              <div data-id="298"><span data-id="299" class="text-txt-100 font-medium">Description</span> — Title</div>
+              <div data-id="300"><span data-id="301" class="text-txt-100 font-medium">Category</span> — Select: Parts/Shipping/Packaging/Platform Fees/Tools/Sourcing/Marketing/Other</div>
+              <div data-id="302"><span data-id="303" class="text-txt-100 font-medium">Amount</span> — Number ($)</div>
+              <div data-id="304"><span data-id="305" class="text-txt-100 font-medium">Date</span> — Date</div>
+              <div data-id="306"><span data-id="307" class="text-txt-100 font-medium">Vendor</span> — Text</div>
+              <div data-id="308"><span data-id="309" class="text-txt-100 font-medium">Linked Device</span> — Relation → Inventory</div>
+              <div data-id="310"><span data-id="311" class="text-txt-100 font-medium">Tax Deductible</span> — Checkbox</div>
+              <div data-id="312"><span data-id="313" class="text-txt-100 font-medium">Payment Method</span> — Select: PayPal/Venmo/Cash/Card</div>
+            </div>
+          </div>
+        </details>
+
+        <!-- Summary Cards -->
+        <div data-id="314" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+          <div data-id="315" class="kpi-card"><div data-id="316" class="text-[11px] font-medium text-txt-400 uppercase tracking-wide mb-1">Total Expenses</div><div data-id="317" class="text-xl font-bold text-expense tabular-nums">$251.14</div></div>
+          <div data-id="318" class="kpi-card"><div data-id="319" class="text-[11px] font-medium text-txt-400 uppercase tracking-wide mb-1">Tax Deductible</div><div data-id="320" class="text-xl font-bold text-profit tabular-nums">$193.14</div></div>
+          <div data-id="321" class="kpi-card"><div data-id="322" class="text-[11px] font-medium text-txt-400 uppercase tracking-wide mb-1">Entries</div><div data-id="323" class="text-xl font-bold text-txt-100 tabular-nums">10</div></div>
+          <div data-id="324" class="kpi-card"><div data-id="325" class="text-[11px] font-medium text-txt-400 uppercase tracking-wide mb-1">Top Category</div><div data-id="326" class="text-xl font-bold text-brand">Parts</div></div>
+        </div>
+
+        <!-- Category Breakdown Bar -->
+        <div data-id="327" class="kpi-card mb-5">
+          <div data-id="328" class="text-sm font-semibold text-txt-100 mb-3">Category Breakdown</div>
+          <div data-id="329" id="expense-breakdown-d3e4" class="space-y-2"></div>
+        </div>
+
+        <div data-id="330" class="overflow-x-auto rounded-xl" style="border:1px solid rgba(255,255,255,0.06)">
+          <table data-id="331" class="data-table">
+            <thead data-id="332"><tr data-id="333"><th data-id="334">Description</th><th data-id="335">Category</th><th data-id="336">Amount</th><th data-id="337">Date</th><th data-id="338">Vendor</th><th data-id="339">Device</th><th data-id="340">Tax Ded.</th><th data-id="341">Payment</th></tr></thead>
+            <tbody data-id="342" id="expenses-tbody-f5g6"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Section 5: Sales DB -->
+      <div data-id="343" id="section-sales" class="section-panel">
+        <div data-id="344" class="mb-6">
+          <h1 data-id="345" class="text-2xl md:text-3xl font-bold text-txt-100">Sales Database</h1>
+          <p data-id="346" class="text-sm text-txt-400 mt-1">Revenue tracking with margin analysis</p>
+        </div>
+
+        <div data-id="347" class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5">
+          <div data-id="348" class="kpi-card"><div data-id="349" class="text-[11px] font-medium text-txt-400 uppercase tracking-wide mb-1">Total Revenue</div><div data-id="350" class="text-xl font-bold text-txt-100 tabular-nums">$976</div></div>
+          <div data-id="351" class="kpi-card"><div data-id="352" class="text-[11px] font-medium text-txt-400 uppercase tracking-wide mb-1">Total Net Profit</div><div data-id="353" class="text-xl font-bold text-profit tabular-nums">$602.00</div></div>
+          <div data-id="354" class="kpi-card"><div data-id="355" class="text-[11px] font-medium text-txt-400 uppercase tracking-wide mb-1">Avg Margin</div><div data-id="356" class="text-xl font-bold text-brand tabular-nums">70.3%</div></div>
+        </div>
+
+        <div data-id="357" class="overflow-x-auto rounded-xl" style="border:1px solid rgba(255,255,255,0.06)">
+          <table data-id="358" class="data-table">
+            <thead data-id="359"><tr data-id="360">
+              <th data-id="361" data-sort="title">Device</th>
+              <th data-id="362" data-sort="price">Sale $</th>
+              <th data-id="363">Platform</th>
+              <th data-id="364">Fees</th>
+              <th data-id="365">Ship</th>
+              <th data-id="366">Net Rev</th>
+              <th data-id="367">COGS</th>
+              <th data-id="368" data-sort="profit">Profit</th>
+              <th data-id="369" data-sort="margin">Margin %</th>
+              <th data-id="370">Date</th>
+            </tr></thead>
+            <tbody data-id="371" id="sales-tbody-h7i8"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Section 6: P&L Dashboard -->
+      <div data-id="372" id="section-pnl" class="section-panel">
+        <div data-id="373" class="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-3">
+          <div data-id="374">
+            <h1 data-id="375" class="text-2xl md:text-3xl font-bold text-txt-100">P&L Dashboard</h1>
+            <p data-id="376" class="text-sm text-txt-400 mt-1">Profit & loss analysis</p>
+          </div>
+          <div data-id="377" class="relative">
+            <select data-id="378" id="pnl-month-select-j9k0" class="form-input pr-10 w-48 cursor-pointer appearance-none">
+              <option data-id="379" value="sep">September 2026</option>
+              <option data-id="380" value="aug">August 2026</option>
+            </select>
+            <i data-id="381" data-lucide="chevron-down" class="w-4 h-4 text-txt-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+          </div>
+        </div>
+
+        <!-- P&L KPI Cards -->
+        <div data-id="382" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6" id="pnl-kpis-l1m2"></div>
+
+        <!-- Charts Row -->
+        <div data-id="383" class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+          <div data-id="384" class="kpi-card">
+            <div data-id="385" class="text-sm font-semibold text-txt-100 mb-3">Monthly Profit Trend (2026)</div>
+            <div data-id="386" class="relative h-56 md:h-64"><canvas data-id="387" id="profit-chart-n3o4"></canvas></div>
+          </div>
+          <div data-id="388" class="kpi-card">
+            <div data-id="389" class="text-sm font-semibold text-txt-100 mb-3">Expense Breakdown</div>
+            <div data-id="390" class="relative h-56 md:h-64"><canvas data-id="391" id="expense-donut-p5q6"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Top Performers -->
+        <div data-id="392" class="kpi-card">
+          <div data-id="393" class="text-sm font-semibold text-txt-100 mb-3">Top Performers by Device Type</div>
+          <div data-id="394" class="overflow-x-auto">
+            <table data-id="395" class="data-table">
+              <thead data-id="396"><tr data-id="397"><th data-id="398">Device Type</th><th data-id="399">Avg Profit</th><th data-id="400">Units Sold</th><th data-id="401">Total Profit</th></tr></thead>
+              <tbody data-id="402">
+                <tr data-id="403"><td data-id="404" class="text-txt-100 font-medium">PS Vita</td><td data-id="405" class="text-profit tabular-nums">$130</td><td data-id="406" class="tabular-nums">2</td><td data-id="407" class="text-profit tabular-nums">$260</td></tr>
+                <tr data-id="408"><td data-id="409" class="text-txt-100 font-medium">GBA SP</td><td data-id="410" class="text-profit tabular-nums">$82</td><td data-id="411" class="tabular-nums">3</td><td data-id="412" class="text-profit tabular-nums">$246</td></tr>
+                <tr data-id="413"><td data-id="414" class="text-txt-100 font-medium">Game Boy</td><td data-id="415" class="text-profit tabular-nums">$69</td><td data-id="416" class="tabular-nums">2</td><td data-id="417" class="text-profit tabular-nums">$138</td></tr>
+                <tr data-id="418"><td data-id="419" class="text-txt-100 font-medium">PSP</td><td data-id="420" class="text-profit tabular-nums">$55</td><td data-id="421" class="tabular-nums">2</td><td data-id="422" class="text-profit tabular-nums">$110</td></tr>
+                <tr data-id="423"><td data-id="424" class="text-txt-100 font-medium">DS</td><td data-id="425" class="text-profit tabular-nums">$45</td><td data-id="426" class="tabular-nums">1</td><td data-id="427" class="text-profit tabular-nums">$45</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 7: Sourcing Watchlist -->
+      <div data-id="428" id="section-watchlist" class="section-panel">
+        <div data-id="429" class="mb-6">
+          <h1 data-id="430" class="text-2xl md:text-3xl font-bold text-txt-100">Sourcing Watchlist</h1>
+          <p data-id="431" class="text-sm text-txt-400 mt-1">Prioritized sourcing radar with margin targets</p>
+        </div>
+
+        <div data-id="432" class="flex flex-wrap gap-2 mb-4" id="watchlist-filters-r7s8">
+          <button data-id="433" class="filter-chip active" data-filter="all">All</button>
+          <button data-id="434" class="filter-chip" data-filter="🔥 Hot">🔥 Hot</button>
+          <button data-id="435" class="filter-chip" data-filter="⚡ Active">⚡ Active</button>
+          <button data-id="436" class="filter-chip" data-filter="👀 Monitor">👀 Monitor</button>
+          <button data-id="437" class="filter-chip" data-filter="❄️ Skip">❄️ Skip</button>
+        </div>
+
+        <!-- Priority Avg Margins -->
+        <div data-id="438" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5" id="watchlist-margins-t9u0">
+          <div data-id="439" class="kpi-card"><div data-id="440" class="text-[11px] font-medium text-txt-400 uppercase tracking-wide mb-1">🔥 Hot Avg Margin</div><div data-id="441" class="text-lg font-bold text-brand tabular-nums">68%</div></div>
+          <div data-id="442" class="kpi-card"><div data-id="443" class="text-[11px] font-medium text-txt-400 uppercase tracking-wide mb-1">⚡ Active Avg Margin</div><div data-id="444" class="text-lg font-bold text-info tabular-nums">66%</div></div>
+          <div data-id="445" class="kpi-card"><div data-id="446" class="text-[11px] font-medium text-txt-400 uppercase tracking-wide mb-1">👀 Monitor Avg Margin</div><div data-id="447" class="text-lg font-bold text-txt-300 tabular-nums">57%</div></div>
+          <div data-id="448" class="kpi-card"><div data-id="449" class="text-[11px] font-medium text-txt-400 uppercase tracking-wide mb-1">❄️ Skip Avg Margin</div><div data-id="450" class="text-lg font-bold text-txt-500 tabular-nums">55%</div></div>
+        </div>
+
+        <div data-id="451" class="text-xs text-txt-400 mb-2" id="watchlist-count-v1w2">Showing 12 items</div>
+        <div data-id="452" class="overflow-x-auto rounded-xl" style="border:1px solid rgba(255,255,255,0.06)">
+          <table data-id="453" class="data-table">
+            <thead data-id="454"><tr data-id="455"><th data-id="456">Device</th><th data-id="457">Target Buy</th><th data-id="458">Avg Sell</th><th data-id="459">Margin</th><th data-id="460">Priority</th><th data-id="461">Sources</th><th data-id="462">Notes</th></tr></thead>
+            <tbody data-id="463" id="watchlist-tbody-x3y4"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Section 8: AI Agent Workflows -->
+      <div data-id="464" id="section-ai" class="section-panel">
+        <div data-id="465" class="mb-6">
+          <h1 data-id="466" class="text-2xl md:text-3xl font-bold text-txt-100">AI Agent Workflows</h1>
+          <p data-id="467" class="text-sm text-txt-400 mt-1">Ready-to-use prompts and templates for Copilot & Claude</p>
+        </div>
+
+        <div data-id="468" class="flex flex-wrap gap-2 mb-6" id="ai-tabs-z5a6">
+          <button data-id="469" class="tab-btn-ai active" data-tab="copilot">Copilot Workflows</button>
+          <button data-id="470" class="tab-btn-ai" data-tab="claude">Claude Workflows</button>
+          <button data-id="471" class="tab-btn-ai" data-tab="shared">Shared Templates</button>
+        </div>
+
+        <div data-id="472" id="ai-tab-content-b7c8"></div>
+      </div>
+
+      <!-- Section 9: KPI Formulas -->
+      <div data-id="473" id="section-formulas" class="section-panel">
+        <div data-id="474" class="mb-6">
+          <h1 data-id="475" class="text-2xl md:text-3xl font-bold text-txt-100">KPI Formulas</h1>
+          <p data-id="476" class="text-sm text-txt-400 mt-1">Notion formula reference library — click to expand</p>
+        </div>
+        <div data-id="477" id="formulas-container-d9e0"></div>
+      </div>
+
+      <!-- Section 10: Setup Guide -->
+      <div data-id="478" id="section-setup" class="section-panel">
+        <div data-id="479" class="mb-6">
+          <h1 data-id="480" class="text-2xl md:text-3xl font-bold text-txt-100">Setup Guide</h1>
+          <p data-id="481" class="text-sm text-txt-400 mt-1">Step-by-step onboarding checklist for building this system in Notion</p>
+        </div>
+
+        <!-- Progress Bar -->
+        <div data-id="482" class="kpi-card mb-6">
+          <div data-id="483" class="flex items-center justify-between mb-2">
+            <span data-id="484" class="text-sm font-medium text-txt-200">Overall Progress</span>
+            <span data-id="485" class="text-sm font-bold text-brand tabular-nums" id="setup-progress-pct-f1g2">0%</span>
+          </div>
+          <div data-id="486" class="progress-bar-bg"><div data-id="487" class="progress-bar-fill bg-brand" id="setup-progress-bar-h3i4" style="width:0%"></div></div>
+        </div>
+
+        <div data-id="488" id="setup-checklist-j5k6"></div>
+      </div>
+
+    </div>
+
+    <footer data-id="489" class="py-8 mt-auto text-center border-t" style="border-color:rgba(255,255,255,0.06)">
+      <p data-id="490" class="text-xs text-txt-500">Made by Copilot</p>
+    </footer>
+  </main>
+
+  <!-- Modal Overlay -->
+  <div data-id="491" id="modal-overlay-l7m8" class="modal-overlay">
+    <div data-id="492" class="modal-box">
+      <div data-id="493" class="flex items-center justify-between mb-5">
+        <h3 data-id="494" class="text-lg font-bold text-txt-100" id="modal-title-n9o0">Add Item</h3>
+        <button data-id="495" id="modal-close-p1q2" class="text-txt-400 hover:text-txt-200"><i data-id="496" data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div data-id="497" id="modal-body-r3s4"></div>
+    </div>
+  </div>
+
+  <script>
+  // ============================================================
+  // GUARD LUCIDE
+  // ============================================================
+  if (typeof lucide !== "undefined" && typeof lucide.createIcons === "function") {
+    lucide.createIcons();
+  }
+
+  // ============================================================
+  // NAV DATA
+  // ============================================================
+  const NAV = [
+    { id:'dashboard', icon:'layout-dashboard', label:'Command Center' },
+    { id:'inventory', icon:'package', label:'Inventory DB' },
+    { id:'refurb', icon:'wrench', label:'Refurb Log DB' },
+    { id:'expenses', icon:'credit-card', label:'Expenses DB' },
+    { id:'sales', icon:'banknote', label:'Sales DB' },
+    { id:'pnl', icon:'bar-chart-3', label:'P&L Dashboard' },
+    { id:'watchlist', icon:'telescope', label:'Sourcing Watchlist' },
+    { id:'ai', icon:'bot', label:'AI Agent Workflows' },
+    { id:'formulas', icon:'calculator', label:'KPI Formulas' },
+    { id:'setup', icon:'settings', label:'Setup Guide' },
+  ];
+
+  let activeSection = 'dashboard';
+
+  function buildNav() {
+    const sidebar = document.getElementById('sidebar-nav-a1b2');
+    const mobileNav = document.getElementById('mobile-nav-links-r7t5');
+    if (!sidebar || !mobileNav) return;
+    sidebar.innerHTML = '';
+    mobileNav.innerHTML = '';
+    NAV.forEach(n => {
+      const html = `<div class="sidebar-link ${n.id===activeSection?'active':''}" data-section="${n.id}">
+        <i data-lucide="${n.icon}" class="w-4 h-4 flex-shrink-0"></i><span>${n.label}</span>
+      </div>`;
+      sidebar.insertAdjacentHTML('beforeend', html);
+      mobileNav.insertAdjacentHTML('beforeend', html);
+    });
+    sidebar.querySelectorAll('.sidebar-link').forEach(el => el.addEventListener('click', () => switchSection(el.dataset.section)));
+    mobileNav.querySelectorAll('.sidebar-link').forEach(el => el.addEventListener('click', () => { switchSection(el.dataset.section); toggleMobileNav(false); }));
+    refreshIcons();
+  }
+
+  function switchSection(id) {
+    activeSection = id;
+    document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+    const target = document.getElementById('section-' + id);
+    if (target) target.classList.add('active');
+    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.toggle('active', l.dataset.section === id));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Mobile nav
+  function toggleMobileNav(show) {
+    const nav = document.getElementById('mobile-nav-x9m2');
+    if (nav) nav.classList.toggle('hidden', !show);
+  }
+  document.getElementById('mobile-menu-btn-z8k3')?.addEventListener('click', () => toggleMobileNav(true));
+  document.getElementById('mobile-nav-close-q4w1')?.addEventListener('click', () => toggleMobileNav(false));
+
+  function refreshIcons() {
+    if (typeof lucide !== "undefined" && typeof lucide.createIcons === "function") lucide.createIcons();
+  }
+
+  // ============================================================
+  // DATA
+  // ============================================================
+  const inventoryData = [
+    { name:'GBA SP AGS-101 (Silver)', condition:'Working', sku:'HH-001', buy:22, listed:145, platform:'GBA', source:'eBay', date:'Aug 14', status:'In Stock', notes:'AGS-101 backlit screen, clean shell' },
+    { name:'PSP 3000 (Blue, cracked)', condition:'Untested', sku:'HH-002', buy:8, listed:65, platform:'PSP', source:'FB Marketplace', date:'Aug 18', status:'In Refurb', notes:'Screen cracked, digitizer may be ok' },
+    { name:'PS Vita 1000 (Black)', condition:'Working', sku:'HH-003', buy:48, listed:185, platform:'PS Vita', source:'Bulk Lot', date:'Aug 20', status:'Listed', notes:'WiFi model, CFW ready' },
+    { name:'Game Boy Color (Teal)', condition:'Refurbed', sku:'HH-004', buy:12, listed:95, platform:'GBA', source:'Thrift', date:'Aug 22', status:'Listed', notes:'New lens + shell swap' },
+    { name:'DS Lite (Red, hinges ok)', condition:'Working', sku:'HH-005', buy:18, listed:72, platform:'DS', source:'Goodwill', date:'Aug 25', status:'Sold', notes:'Top screen bright, no dead pixels' },
+    { name:'PSP Go (Black)', condition:'Untested', sku:'HH-006', buy:35, listed:120, platform:'PSP', source:'eBay', date:'Sep 1', status:'In Refurb', notes:'Battery swollen, charging port issue' },
+    { name:'GBA Micro (Famicom)', condition:'Working', sku:'HH-007', buy:55, listed:210, platform:'GBA', source:'eBay', date:'Sep 2', status:'Listed', notes:'Famicom 20th anniversary edition' },
+    { name:'PS3 Slim (YLOD)', condition:'For Parts', sku:'HH-008', buy:15, listed:75, platform:'PS3', source:'FB Marketplace', date:'Sep 4', status:'In Refurb', notes:'GPU reflow candidate' },
+    { name:'Game Boy Pocket (Purple)', condition:'Working', sku:'HH-009', buy:9, listed:88, platform:'GBA', source:'Thrift', date:'Sep 6', status:'In Stock', notes:'Clean, battery cover present' },
+    { name:'3DS XL (Black, scratched)', condition:'Untested', sku:'HH-010', buy:30, listed:115, platform:'3DS', source:'Bulk Lot', date:'Sep 8', status:'In Stock', notes:'Top screen scratches, needs testing' },
+  ];
+
+  let invStatusFilter = 'all', invPlatformFilter = 'all';
+
+  function getStatusColor(s) {
+    const m = { 'In Stock':'background:rgba(56,189,248,0.15);color:#7dd3fc', 'Listed':'background:rgba(245,158,11,0.15);color:#fbbf24', 'Sold':'background:rgba(16,185,129,0.15);color:#34d399', 'In Refurb':'background:rgba(167,139,250,0.15);color:#a78bfa', 'Parts':'background:rgba(244,63,94,0.15);color:#fb7185' };
+    return m[s] || 'background:rgba(255,255,255,0.08);color:#94a3b8';
+  }
+
+  function getCondColor(c) {
+    const m = { 'Working':'color:#34d399', 'Untested':'color:#fbbf24', 'Refurbed':'color:#7dd3fc', 'For Parts':'color:#fb7185' };
+    return m[c] || 'color:#94a3b8';
+  }
+
+  function renderInventory() {
+    let data = inventoryData;
+    if (invStatusFilter !== 'all') data = data.filter(d => d.status === invStatusFilter);
+    if (invPlatformFilter !== 'all') data = data.filter(d => d.platform === invPlatformFilter);
+    const tbody = document.getElementById('inv-tbody-r1s2');
+    const count = document.getElementById('inv-count-j7h8');
+    if (!tbody) return;
+    count.textContent = `Showing ${data.length} item${data.length!==1?'s':''}`;
+    tbody.innerHTML = data.map((d,i) => {
+      const profit = Math.round(d.listed - d.buy - d.listed*0.13);
+      return `<tr class="inv-row cursor-pointer" data-idx="${inventoryData.indexOf(d)}">
+        <td class="text-txt-100 font-medium">${d.name}</td>
+        <td><span style="${getCondColor(d.condition)}" class="text-xs font-medium">${d.condition}</span></td>
+        <td class="text-txt-400 tabular-nums">${d.sku}</td>
+        <td class="tabular-nums">$${d.buy}</td>
+        <td class="tabular-nums">$${d.listed}</td>
+        <td class="text-txt-300">${d.platform}</td>
+        <td class="text-txt-300">${d.source}</td>
+        <td class="text-txt-400">${d.date}</td>
+        <td><span class="status-badge" style="${getStatusColor(d.status)}">${d.status}</span></td>
+        <td class="text-profit tabular-nums font-medium">$${profit}</td>
+      </tr>`;
+    }).join('');
+    tbody.querySelectorAll('.inv-row').forEach(r => r.addEventListener('click', () => showInvDetail(parseInt(r.dataset.idx))));
+  }
+
+  function showInvDetail(idx) {
+    const d = inventoryData[idx];
+    if (!d) return;
+    const card = document.getElementById('inv-detail-card-t3u4');
+    document.getElementById('inv-detail-title-v5w6').textContent = d.name;
+    const profit = Math.round(d.listed - d.buy - d.listed*0.13);
+    document.getElementById('inv-detail-body-z9a0').innerHTML = [
+      ['SKU', d.sku], ['Condition', d.condition], ['Buy Price', '$'+d.buy], ['Listed Price', '$'+d.listed],
+      ['Platform', d.platform], ['Source', d.source], ['Date Acquired', d.date], ['Status', d.status],
+      ['Est. Profit', '$'+profit], ['Est. Fees (13%)', '$'+Math.round(d.listed*0.13)], ['Notes', d.notes]
+    ].map(([k,v]) => `<div><div class="text-[11px] text-txt-400 uppercase tracking-wide mb-1">${k}</div><div class="text-sm text-txt-100">${v}</div></div>`).join('');
+    card.classList.remove('hidden');
+  }
+
+  document.getElementById('inv-detail-close-x7y8')?.addEventListener('click', () => {
+    document.getElementById('inv-detail-card-t3u4')?.classList.add('hidden');
+  });
+
+  // Inventory filters
+  document.getElementById('inv-status-filters-m3n4')?.querySelectorAll('.filter-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('inv-status-filters-m3n4').querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      invStatusFilter = btn.dataset.filter;
+      renderInventory();
+    });
+  });
+  document.getElementById('inv-platform-filters-k5l6')?.querySelectorAll('.filter-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('inv-platform-filters-k5l6').querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      invPlatformFilter = btn.dataset.filter;
+      renderInventory();
+    });
+  });
+
+  // ============================================================
+  // REFURB DATA
+  // ============================================================
+  const refurbData = [
+    { job:'PSP 3000 Screen Swap', device:'HH-002', issue:'Screen', parts:'Replacement LCD', partsCost:7, hours:1.5, rate:20, notes:'Digitizer intact, just LCD', status:'In Progress', outcome:'—' },
+    { job:'PSP Go Battery Fix', device:'HH-006', issue:'Battery, Charging Port', parts:'Li-ion 930mAh + port', partsCost:9, hours:1, rate:20, notes:'Port was bent, resoldered', status:'In Progress', outcome:'—' },
+    { job:'PS3 YLOD Reball', device:'HH-008', issue:'YLOD', parts:'Thermal paste kit', partsCost:4, hours:3, rate:20, notes:'GPU reflow attempt', status:'Queued', outcome:'—' },
+    { job:'GBA SP Backlight Upgrade', device:'HH-001', issue:'Backlight', parts:'IPS kit v2', partsCost:18, hours:2, rate:20, notes:'AGS-001→101 mod', status:'Complete', outcome:'Pass' },
+    { job:'DS Lite Hinge Repair', device:'HH-005', issue:'Shell', parts:'Top shell replacement', partsCost:6, hours:0.5, rate:20, notes:'Cosmetic only', status:'Complete', outcome:'Pass' },
+  ];
+
+  function getRefurbStatusColor(s) {
+    const m = { 'Queued':'background:rgba(245,158,11,0.15);color:#fbbf24', 'In Progress':'background:rgba(56,189,248,0.15);color:#7dd3fc', 'Complete':'background:rgba(16,185,129,0.15);color:#34d399', 'Abandoned':'background:rgba(244,63,94,0.15);color:#fb7185' };
+    return m[s] || '';
+  }
+
+  function renderRefurb() {
+    const tbody = document.getElementById('refurb-tbody-b1c2');
+    if (!tbody) return;
+    tbody.innerHTML = refurbData.map(d => {
+      const total = d.partsCost + d.hours * d.rate;
+      return `<tr>
+        <td class="text-txt-100 font-medium">${d.job}</td>
+        <td class="text-txt-300 tabular-nums">${d.device}</td>
+        <td class="text-txt-300">${d.issue}</td>
+        <td class="text-txt-300">${d.parts}</td>
+        <td class="tabular-nums">$${d.partsCost}</td>
+        <td class="tabular-nums">${d.hours}h</td>
+        <td class="tabular-nums text-expense">$${total.toFixed(0)}</td>
+        <td><span class="status-badge" style="${getRefurbStatusColor(d.status)}">${d.status}</span></td>
+        <td class="text-txt-300">${d.outcome}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ============================================================
+  // EXPENSES DATA
+  // ============================================================
+  const expensesData = [
+    { desc:'eBay Seller Fees - Aug', cat:'Platform Fees', amount:67.40, date:'Aug 31', vendor:'eBay', device:'—', taxDed:true, payment:'Card' },
+    { desc:'Bubble wrap + boxes', cat:'Packaging', amount:23.15, date:'Aug 28', vendor:'Amazon', device:'—', taxDed:true, payment:'Card' },
+    { desc:'IPS Kit for GBA SP', cat:'Parts', amount:18.00, date:'Aug 26', vendor:'AliExpress', device:'HH-001', taxDed:true, payment:'PayPal' },
+    { desc:'USPS Shipping Aug', cat:'Shipping', amount:34.80, date:'Aug 31', vendor:'USPS', device:'—', taxDed:true, payment:'Card' },
+    { desc:'PSP LCD screen', cat:'Parts', amount:7.00, date:'Sep 1', vendor:'AliExpress', device:'HH-002', taxDed:true, payment:'PayPal' },
+    { desc:'Battery + charging port PSP Go', cat:'Parts', amount:9.00, date:'Sep 2', vendor:'AliExpress', device:'HH-006', taxDed:true, payment:'PayPal' },
+    { desc:'FB Marketplace sourcing run', cat:'Sourcing', amount:58.00, date:'Sep 4', vendor:'Various', device:'HH-008', taxDed:false, payment:'Cash' },
+    { desc:'Thermal paste + flux', cat:'Tools', amount:6.50, date:'Sep 4', vendor:'Amazon', device:'—', taxDed:true, payment:'Card' },
+    { desc:'Poly mailers 50pk', cat:'Packaging', amount:14.99, date:'Sep 6', vendor:'Amazon', device:'—', taxDed:true, payment:'Card' },
+    { desc:'PayPal transaction fees', cat:'Platform Fees', amount:12.30, date:'Sep 9', vendor:'PayPal', device:'—', taxDed:true, payment:'Card' },
+  ];
+
+  function getCatColor(c) {
+    const m = { 'Parts':'background:rgba(167,139,250,0.15);color:#a78bfa', 'Shipping':'background:rgba(56,189,248,0.15);color:#7dd3fc', 'Platform Fees':'background:rgba(244,63,94,0.15);color:#fb7185', 'Packaging':'background:rgba(245,158,11,0.15);color:#fbbf24', 'Tools':'background:rgba(16,185,129,0.15);color:#34d399', 'Sourcing':'background:rgba(245,158,11,0.25);color:#fbbf24' };
+    return m[c] || 'background:rgba(255,255,255,0.08);color:#94a3b8';
+  }
+
+  function renderExpenses() {
+    const tbody = document.getElementById('expenses-tbody-f5g6');
+    if (!tbody) return;
+    tbody.innerHTML = expensesData.map(d => `<tr>
+      <td class="text-txt-100 font-medium">${d.desc}</td>
+      <td><span class="status-badge" style="${getCatColor(d.cat)}">${d.cat}</span></td>
+      <td class="tabular-nums text-expense">$${d.amount.toFixed(2)}</td>
+      <td class="text-txt-400">${d.date}</td>
+      <td class="text-txt-300">${d.vendor}</td>
+      <td class="text-txt-400 tabular-nums">${d.device}</td>
+      <td>${d.taxDed ? '<span class="text-profit text-xs">✓</span>' : '<span class="text-txt-500 text-xs">✗</span>'}</td>
+      <td class="text-txt-300">${d.payment}</td>
+    </tr>`).join('');
+
+    // Category breakdown
+    const cats = {};
+    const total = expensesData.reduce((s,d) => { cats[d.cat] = (cats[d.cat]||0) + d.amount; return s + d.amount; }, 0);
+    const catColors = { 'Parts':'#a78bfa', 'Shipping':'#7dd3fc', 'Platform Fees':'#fb7185', 'Packaging':'#fbbf24', 'Tools':'#34d399', 'Sourcing':'#f59e0b' };
+    const bd = document.getElementById('expense-breakdown-d3e4');
+    if (bd) {
+      bd.innerHTML = Object.entries(cats).sort((a,b) => b[1]-a[1]).map(([cat, amt]) => {
+        const pct = ((amt/total)*100).toFixed(1);
+        const color = catColors[cat] || '#94a3b8';
+        return `<div>
+          <div class="flex items-center justify-between text-xs mb-1"><span class="text-txt-200">${cat}</span><span class="text-txt-300 tabular-nums">$${amt.toFixed(2)} (${pct}%)</span></div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // ============================================================
+  // SALES DATA
+  // ============================================================
+  const salesData = [
+    { title:'GBA SP AGS-101 Silver', device:'HH-001', price:145, platform:'eBay', fees:14.50, ship:6.80, cogs:40, date:'Sep 9' },
+    { title:'PS Vita Slim', device:'—', price:210, platform:'Mercari', fees:21, ship:8.50, cogs:48, date:'Sep 7' },
+    { title:'PSP 3000 Red', device:'—', price:88, platform:'eBay', fees:8.80, ship:5.40, cogs:32, date:'Sep 5' },
+    { title:'Game Boy Pocket', device:'HH-009', price:95, platform:'Whatnot', fees:9.50, ship:4.20, cogs:13, date:'Sep 3' },
+    { title:'DS Lite White', device:'HH-005', price:72, platform:'eBay', fees:7.20, ship:4.80, cogs:24, date:'Sep 1' },
+    { title:'GBA Color Purple', device:'—', price:98, platform:'Mercari', fees:9.80, ship:4.50, cogs:14, date:'Aug 30' },
+    { title:'PSP 2000 (lot)', device:'—', price:130, platform:'FB Marketplace', fees:0, ship:0, cogs:40, date:'Aug 27' },
+    { title:'GBA SP Pink', device:'—', price:138, platform:'eBay', fees:13.80, ship:6.20, cogs:38, date:'Aug 25' },
+  ];
+
+  function getPlatColor(p) {
+    const m = { 'eBay':'background:rgba(56,189,248,0.15);color:#7dd3fc', 'Mercari':'background:rgba(244,63,94,0.15);color:#fb7185', 'FB Marketplace':'background:rgba(56,189,248,0.15);color:#7dd3fc', 'Whatnot':'background:rgba(167,139,250,0.15);color:#a78bfa', 'Local Cash':'background:rgba(16,185,129,0.15);color:#34d399' };
+    return m[p] || '';
+  }
+
+  function renderSales() {
+    const tbody = document.getElementById('sales-tbody-h7i8');
+    if (!tbody) return;
+    tbody.innerHTML = salesData.map(d => {
+      const netRev = d.price - d.fees - d.ship;
+      const profit = netRev - d.cogs;
+      const margin = ((profit / d.price) * 100).toFixed(1);
+      return `<tr>
+        <td class="text-txt-100 font-medium">${d.title}</td>
+        <td class="tabular-nums">$${d.price}</td>
+        <td><span class="status-badge" style="${getPlatColor(d.platform)}">${d.platform}</span></td>
+        <td class="tabular-nums text-expense">$${d.fees.toFixed(2)}</td>
+        <td class="tabular-nums text-txt-300">$${d.ship.toFixed(2)}</td>
+        <td class="tabular-nums">$${netRev.toFixed(2)}</td>
+        <td class="tabular-nums text-txt-300">$${d.cogs}</td>
+        <td class="tabular-nums text-profit font-medium">$${profit.toFixed(2)}</td>
+        <td class="tabular-nums text-brand font-medium">${margin}%</td>
+        <td class="text-txt-400">${d.date}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ============================================================
+  // P&L DASHBOARD
+  // ============================================================
+  const pnlData = {
+    sep: { revenue:743, fees:64, shipping:29, cogs:157, parts:25, netProfit:468, margin:63 },
+    aug: { revenue:1388, fees:118, shipping:52, cogs:342, parts:42, netProfit:834, margin:60 },
+  };
+  let profitChart = null, donutChart = null;
+
+  function renderPnL() {
+    const month = document.getElementById('pnl-month-select-j9k0')?.value || 'sep';
+    const d = pnlData[month];
+    const kpis = document.getElementById('pnl-kpis-l1m2');
+    if (kpis) {
+      kpis.innerHTML = [
+        { label:'Gross Revenue', value:'$'+d.revenue.toLocaleString(), color:'text-txt-100' },
+        { label:'Total Costs', value:'$'+(d.fees+d.shipping+d.cogs+d.parts).toLocaleString(), color:'text-expense' },
+        { label:'Net Profit', value:'$'+d.netProfit.toLocaleString(), color:'text-profit' },
+        { label:'Profit Margin', value:d.margin+'%', color:'text-brand' },
+      ].map(k => `<div class="kpi-card">
+        <div class="text-[11px] font-medium text-txt-400 uppercase tracking-wide mb-1">${k.label}</div>
+        <div class="text-xl font-bold ${k.color} tabular-nums">${k.value}</div>
+      </div>`).join('') + `
+      <div class="kpi-card"><div class="text-[11px] font-medium text-txt-400 uppercase tracking-wide mb-1">Platform Fees</div><div class="text-lg font-bold text-expense tabular-nums">$${d.fees}</div></div>
+      <div class="kpi-card"><div class="text-[11px] font-medium text-txt-400 uppercase tracking-wide mb-1">Shipping Costs</div><div class="text-lg font-bold text-txt-300 tabular-nums">$${d.shipping}</div></div>
+      <div class="kpi-card"><div class="text-[11px] font-medium text-txt-400 uppercase tracking-wide mb-1">COGS</div><div class="text-lg font-bold text-txt-300 tabular-nums">$${d.cogs}</div></div>
+      <div class="kpi-card"><div class="text-[11px] font-medium text-txt-400 uppercase tracking-wide mb-1">Parts Costs</div><div class="text-lg font-bold text-purple tabular-nums">$${d.parts}</div></div>`;
+    }
+    renderProfitChart();
+    renderDonutChart();
+  }
+
+  function renderProfitChart() {
+    if (typeof Chart === 'undefined') return;
+    const ctx = document.getElementById('profit-chart-n3o4');
+    if (!ctx) return;
+    if (profitChart) profitChart.destroy();
+    profitChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep'],
+        datasets: [{
+          label: 'Net Profit',
+          data: [0, 0, 0, 320, 580, 710, 920, 834, 468],
+          backgroundColor: [
+            'rgba(100,116,139,0.3)','rgba(100,116,139,0.3)','rgba(100,116,139,0.3)',
+            'rgba(16,185,129,0.6)','rgba(16,185,129,0.7)','rgba(16,185,129,0.7)',
+            'rgba(16,185,129,0.8)','rgba(16,185,129,0.8)','rgba(245,158,11,0.7)'
+          ],
+          borderRadius: 4,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { backgroundColor:'#1a1d2e', titleColor:'#f1f5f9', bodyColor:'#cbd5e1', borderColor:'rgba(255,255,255,0.1)', borderWidth:1, padding:10, cornerRadius:8, callbacks: { label: ctx => '$' + ctx.parsed.y } } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color:'#64748b', font:{ size:11 } } },
+          y: { grid: { color:'rgba(255,255,255,0.04)' }, ticks: { color:'#64748b', font:{ size:11 }, callback: v => '$'+v } }
+        }
+      }
+    });
+  }
+
+  function renderDonutChart() {
+    if (typeof Chart === 'undefined') return;
+    const ctx = document.getElementById('expense-donut-p5q6');
+    if (!ctx) return;
+    if (donutChart) donutChart.destroy();
+    donutChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Parts','Platform Fees','Shipping','Packaging','Tools'],
+        datasets: [{
+          data: [32, 28, 21, 11, 8],
+          backgroundColor: ['#a78bfa','#fb7185','#7dd3fc','#fbbf24','#34d399'],
+          borderColor: '#1a1d2e', borderWidth: 3,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '65%',
+        plugins: {
+          legend: { position:'bottom', labels: { color:'#94a3b8', font:{ size:11 }, padding:14, usePointStyle:true, pointStyleWidth:8 } },
+          tooltip: { backgroundColor:'#1a1d2e', titleColor:'#f1f5f9', bodyColor:'#cbd5e1', borderColor:'rgba(255,255,255,0.1)', borderWidth:1, padding:10, cornerRadius:8, callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed + '%' } }
+        }
+      }
+    });
+  }
+
+  document.getElementById('pnl-month-select-j9k0')?.addEventListener('change', renderPnL);
+
+  // ============================================================
+  // WATCHLIST
+  // ============================================================
+  const watchlistData = [
+    { name:'GBA SP AGS-101', buy:'$15-25', sell:'$130-160', margin:'70%+', priority:'🔥 Hot', sources:'eBay, FB, Goodwill', notes:'IPS upgrade potential' },
+    { name:'GBA Micro (any)', buy:'$40-60', sell:'$180-250', margin:'65%+', priority:'🔥 Hot', sources:'eBay, Mercari', notes:'High demand, small lot' },
+    { name:'PS Vita 1000 (WiFi)', buy:'$35-55', sell:'$170-220', margin:'68%+', priority:'🔥 Hot', sources:'FB Marketplace, eBay', notes:'CFW value' },
+    { name:'Game Boy Color', buy:'$8-15', sell:'$75-110', margin:'72%+', priority:'⚡ Active', sources:'Thrift, Goodwill', notes:'Common but good margin' },
+    { name:'PSP Go', buy:'$25-40', sell:'$110-140', margin:'60%+', priority:'⚡ Active', sources:'eBay', notes:'Battery issues common, easy fix' },
+    { name:'Game Boy Pocket', buy:'$5-12', sell:'$75-95', margin:'78%+', priority:'⚡ Active', sources:'Thrift, Estate Sales', notes:'Undervalued at thrift' },
+    { name:'DS Lite', buy:'$10-20', sell:'$65-85', margin:'62%+', priority:'⚡ Active', sources:'Goodwill, eBay', notes:'Hinge cracks = cheap buy' },
+    { name:'3DS XL (any)', buy:'$20-35', sell:'$90-120', margin:'58%+', priority:'👀 Monitor', sources:'FB, eBay', notes:'Market softening' },
+    { name:'PS3 Slim (YLOD)', buy:'$10-20', sell:'$60-85', margin:'55%+', priority:'👀 Monitor', sources:'FB Marketplace', notes:'Parts value, risky' },
+    { name:'PSP 3000', buy:'$8-18', sell:'$70-95', margin:'62%+', priority:'⚡ Active', sources:'eBay, Goodwill', notes:'Screens available cheap' },
+    { name:'Game Boy DMG', buy:'$12-22', sell:'$80-110', margin:'67%+', priority:'⚡ Active', sources:'Thrift, Estate', notes:'Retro demand strong' },
+    { name:'Nintendo DS Phat', buy:'$5-10', sell:'$40-55', margin:'55%+', priority:'❄️ Skip', sources:'—', notes:'Low margin, slow sell' },
+  ];
+
+  let watchlistFilter = 'all';
+
+  function getPriorityColor(p) {
+    if (p.includes('Hot')) return 'background:rgba(244,63,94,0.15);color:#fb7185';
+    if (p.includes('Active')) return 'background:rgba(56,189,248,0.15);color:#7dd3fc';
+    if (p.includes('Monitor')) return 'background:rgba(245,158,11,0.15);color:#fbbf24';
+    if (p.includes('Skip')) return 'background:rgba(100,116,139,0.2);color:#94a3b8';
+    return '';
+  }
+
+  function renderWatchlist() {
+    let data = watchlistData;
+    if (watchlistFilter !== 'all') data = data.filter(d => d.priority === watchlistFilter);
+    const tbody = document.getElementById('watchlist-tbody-x3y4');
+    const count = document.getElementById('watchlist-count-v1w2');
+    if (!tbody) return;
+    count.textContent = `Showing ${data.length} item${data.length!==1?'s':''}`;
+    tbody.innerHTML = data.map(d => `<tr>
+      <td class="text-txt-100 font-medium">${d.name}</td>
+      <td class="tabular-nums text-profit">${d.buy}</td>
+      <td class="tabular-nums text-txt-200">${d.sell}</td>
+      <td class="tabular-nums text-brand font-medium">${d.margin}</td>
+      <td><span class="status-badge" style="${getPriorityColor(d.priority)}">${d.priority}</span></td>
+      <td class="text-txt-300">${d.sources}</td>
+      <td class="text-txt-400">${d.notes}</td>
+    </tr>`).join('');
+  }
+
+  document.getElementById('watchlist-filters-r7s8')?.querySelectorAll('.filter-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('watchlist-filters-r7s8').querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      watchlistFilter = btn.dataset.filter;
+      renderWatchlist();
+    });
+  });
+
+  // ============================================================
+  // AI WORKFLOWS
+  // ============================================================
+  const aiWorkflows = {
+    copilot: [
+      { title:'Daily Briefing Agent', desc:'Analyzes today\'s inventory, pending refurbs, and queued listings to produce a morning action plan.',
+        prompt:`You are the operations agent for Horchata's Handhelds (HH), a handheld gaming device resale and refurb business. Based on the following data from our Notion workspace:\n\n[INVENTORY_DATA]\n[REFURB_LOG]\n[PENDING_LISTINGS]\n\nGenerate a concise morning briefing that includes:\n(1) Top 3 priority actions for today ranked by revenue impact\n(2) Any refurbs that are overdue or need attention\n(3) Devices ready to list with suggested prices\n(4) Any sourcing opportunities based on the watchlist\n\nFormat as a clean executive brief with headers and bullet points.` },
+      { title:'Expense Categorizer', desc:'Paste raw expense list, outputs categorized Notion-ready rows with amounts and categories.',
+        prompt:`You are the bookkeeping agent for Horchata's Handhelds. I will paste a list of raw expenses (receipts, transactions, notes). For each expense:\n\n1. Categorize it: Parts / Shipping / Packaging / Platform Fees / Tools / Sourcing / Marketing / Other\n2. Extract the amount\n3. Identify the vendor\n4. Determine if tax deductible (Y/N)\n5. Link to a device SKU if applicable\n\nOutput as a table with columns: Description | Category | Amount | Vendor | Tax Deductible | Device SKU | Payment Method\n\nRaw expenses:\n[PASTE_EXPENSES_HERE]` },
+      { title:'Profit Analyzer', desc:'Input sales data, outputs P&L summary with insights and recommendations.',
+        prompt:`You are the financial analyst for Horchata's Handhelds. Analyze the following sales data and produce a P&L summary:\n\n[SALES_DATA]\n\nInclude:\n1. Total revenue, total costs, net profit\n2. Top 3 most profitable items and why\n3. Average margin by platform (eBay, Mercari, FB, Whatnot)\n4. Recommendations to improve margins\n5. Devices to avoid based on low ROI\n\nFormat as an executive financial brief.` },
+      { title:'Listing Writer', desc:'Input device specs + condition, outputs optimized eBay/Mercari listing.',
+        prompt:`You are the listing copywriter for Horchata's Handhelds. Write an optimized marketplace listing for:\n\nDevice: [DEVICE_NAME]\nCondition: [CONDITION]\nIncludes: [ACCESSORIES]\nRefurb work done: [REPAIRS]\nPlatform: [eBay/Mercari/Whatnot]\n\nGenerate:\n1. SEO-optimized title (80 chars max for eBay)\n2. Detailed description with condition notes\n3. Suggested price based on market data\n4. 5 relevant tags/keywords\n5. Shipping recommendation` },
+      { title:'Sourcing Scout Brief', desc:'Weekly sourcing report based on watchlist data and market conditions.',
+        prompt:`You are the sourcing intelligence agent for Horchata's Handhelds. Based on our current watchlist:\n\n[WATCHLIST_DATA]\n\nGenerate a weekly sourcing brief:\n1. Top 5 devices to hunt for this week (by margin opportunity)\n2. Platform-specific tips (what's trending on eBay vs FB vs thrift)\n3. Price alerts — any devices where market prices have dropped below our target buy price\n4. Seasonal trends to watch\n5. New devices to consider adding to the watchlist\n\nKeep it actionable and concise.` },
+    ],
+    claude: [
+      { title:'Refurb Diagnosis Agent', desc:'Describe symptoms, get step-by-step repair procedure with parts list.',
+        prompt:`You are a handheld gaming device repair technician with 15 years of experience. I will describe symptoms of a malfunctioning device. Provide:\n\n1. Most likely diagnosis (ranked by probability)\n2. Step-by-step repair procedure for the most likely issue\n3. Required parts with estimated costs (AliExpress/eBay prices)\n4. Required tools\n5. Difficulty rating (1-5) and estimated time\n6. Common pitfalls to avoid\n7. Whether it's worth repairing vs. selling for parts\n\nDevice: [DEVICE_NAME]\nSymptoms: [DESCRIBE_SYMPTOMS]\nWhat I've already tried: [PRIOR_ATTEMPTS]` },
+      { title:'Pricing Intelligence', desc:'Input device + condition, get market value analysis and pricing suggestion.',
+        prompt:`You are a retro gaming market analyst. Research and provide pricing intelligence for:\n\nDevice: [DEVICE_NAME]\nCondition: [CONDITION]\nVariant/Color: [VARIANT]\nAccessories included: [ACCESSORIES]\n\nProvide:\n1. Current market range (low/mid/high) on eBay, Mercari, and FB Marketplace\n2. Recent sold listings analysis (last 30 days trend)\n3. Recommended listing price for quick sale vs. max profit\n4. Best platform to sell on and why\n5. Optimal listing day/time\n6. Price factors (color rarity, region, accessories impact)` },
+      { title:'Batch Inventory Logger', desc:'Paste a list of acquired items, get formatted Notion DB rows.',
+        prompt:`You are the inventory manager for Horchata's Handhelds. I just acquired a batch of devices. Format each one as a Notion database row.\n\nFor each device, generate:\n- Device Name (with variant/color)\n- Condition assessment (Untested/Working/For Parts/Refurbed)\n- Suggested SKU (format: HH-XXX)\n- Buy Price\n- Suggested Listed Price (based on market knowledge)\n- Platform category\n- Estimated Potential Profit\n- Priority notes\n\nBatch acquired from [SOURCE] on [DATE]:\n[LIST_DEVICES_HERE]` },
+      { title:'Parts Sourcing Optimizer', desc:'Input parts needed, get cheapest reliable sources and alternatives.',
+        prompt:`You are a parts sourcing specialist for retro gaming handhelds. I need the following parts:\n\n[PARTS_LIST]\n\nFor each part, provide:\n1. Best price source (AliExpress, eBay, RetroModding, etc.)\n2. Estimated cost including shipping\n3. Quality rating of the source\n4. Alternative/compatible parts if available\n5. Estimated delivery time\n6. Bulk discount opportunities\n7. Total cost comparison across sources` },
+      { title:'Monthly Business Review', desc:'Input month\'s data, get executive summary with recommendations.',
+        prompt:`You are the business consultant for Horchata's Handhelds. Write a monthly business review based on:\n\nMonth: [MONTH]\nTotal Sales: [TOTAL_SALES]\nTotal Expenses: [TOTAL_EXPENSES]\nInventory Changes: [INVENTORY_DELTA]\nRefurb Completions: [REFURB_COUNT]\nTop Sellers: [TOP_ITEMS]\n\nProvide:\n1. Executive summary (3 sentences)\n2. Key wins this month\n3. Areas for improvement\n4. Inventory health check\n5. Cash flow analysis\n6. Recommendations for next month\n7. 90-day strategic outlook` },
+    ],
+    shared: [
+      { title:'Notion API Webhook Payload', desc:'Standard webhook payload format for Notion integrations.',
+        prompt:`// Notion API — Create Database Entry\n// POST https://api.notion.com/v1/pages\n{\n  "parent": { "database_id": "YOUR_DB_ID" },\n  "properties": {\n    "Device Name": { "title": [{ "text": { "content": "GBA SP AGS-101" } }] },\n    "Condition": { "select": { "name": "Working" } },\n    "Buy Price": { "number": 22 },\n    "Status": { "select": { "name": "In Stock" } }\n  }\n}` },
+      { title:'Standard Operating Procedure Template', desc:'SOP template for common HH workflows.',
+        prompt:`# SOP: [PROCEDURE NAME]\n## Horchata's Handhelds\n\n**Purpose:** [Brief description]\n**Owner:** Justin\n**Last Updated:** [Date]\n\n### Prerequisites\n- [ ] Required tools/materials\n- [ ] Required access/permissions\n\n### Steps\n1. [Step 1]\n2. [Step 2]\n3. [Step 3]\n\n### Quality Checks\n- [ ] Check 1\n- [ ] Check 2\n\n### Notes\n- [Edge cases or common issues]` },
+      { title:'Weekly Review Checklist', desc:'Pre-filled weekly review template for consistent business tracking.',
+        prompt:`# Weekly Review — Horchata's Handhelds\n## Week of [DATE]\n\n### Inventory\n- [ ] Count current stock: ___ units\n- [ ] Update conditions on any changed items\n- [ ] Flag stale inventory (>30 days)\n\n### Sales\n- [ ] Log all sales from this week\n- [ ] Calculate weekly revenue: $___\n- [ ] Calculate weekly profit: $___\n\n### Refurbs\n- [ ] Update refurb statuses\n- [ ] Order needed parts\n- [ ] Log completed repairs\n\n### Sourcing\n- [ ] Review watchlist prices\n- [ ] Check thrift stores / FB Marketplace\n- [ ] Log any new acquisitions\n\n### Financials\n- [ ] Log all expenses\n- [ ] Update P&L\n- [ ] Review margins by platform\n\n### Next Week\n- Priority 1: ___\n- Priority 2: ___\n- Priority 3: ___` },
+    ]
+  };
+
+  let activeAiTab = 'copilot';
+
+  function getAgentBadge(type) {
+    if (type === 'copilot') return '<span class="status-badge" style="background:rgba(56,189,248,0.15);color:#7dd3fc">Copilot</span>';
+    if (type === 'claude') return '<span class="status-badge" style="background:rgba(167,139,250,0.15);color:#a78bfa">Claude</span>';
+    return '<span class="status-badge" style="background:rgba(245,158,11,0.15);color:#fbbf24">Shared</span>';
+  }
+
+  function renderAiWorkflows() {
+    const container = document.getElementById('ai-tab-content-b7c8');
+    if (!container) return;
+    const workflows = aiWorkflows[activeAiTab] || [];
+    container.innerHTML = workflows.map((w, i) => `
+      <div class="kpi-card mb-3">
+        <div class="flex items-start justify-between gap-3 mb-2">
+          <div>
+            <div class="flex items-center gap-2 mb-1"><h3 class="text-sm font-semibold text-txt-100">${w.title}</h3>${getAgentBadge(activeAiTab)}</div>
+            <p class="text-xs text-txt-400">${w.desc}</p>
+          </div>
+          <button class="ai-expand-btn flex-shrink-0 text-brand hover:text-brand-light text-xs font-medium cursor-pointer flex items-center gap-1" data-idx="${i}">
+            <i data-lucide="code" class="w-3.5 h-3.5"></i> View Prompt
+          </button>
+        </div>
+        <div class="ai-prompt-body hidden" data-prompt-idx="${i}">
+          <div class="prompt-block mt-3">${escapeHtml(w.prompt)}</div>
+          <button class="copy-btn mt-2 ai-copy-btn" data-prompt-idx="${i}"><i data-lucide="copy" class="w-3 h-3 inline mr-1"></i>Copy Prompt</button>
+        </div>
+      </div>
+    `).join('');
+    refreshIcons();
+    container.querySelectorAll('.ai-expand-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const body = container.querySelector(`.ai-prompt-body[data-prompt-idx="${btn.dataset.idx}"]`);
+        if (body) body.classList.toggle('hidden');
+      });
+    });
+    container.querySelectorAll('.ai-copy-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.promptIdx);
+        const text = (aiWorkflows[activeAiTab] || [])[idx]?.prompt || '';
+        navigator.clipboard.writeText(text).then(() => {
+          btn.innerHTML = '<i data-lucide="check" class="w-3 h-3 inline mr-1"></i>Copied!';
+          refreshIcons();
+          setTimeout(() => { btn.innerHTML = '<i data-lucide="copy" class="w-3 h-3 inline mr-1"></i>Copy Prompt'; refreshIcons(); }, 1500);
+        });
+      });
+    });
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  document.getElementById('ai-tabs-z5a6')?.querySelectorAll('.tab-btn-ai').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('ai-tabs-z5a6').querySelectorAll('.tab-btn-ai').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeAiTab = btn.dataset.tab;
+      renderAiWorkflows();
+    });
+  });
+
+  // ============================================================
+  // KPI FORMULAS
+  // ============================================================
+  const formulaSections = [
+    { title:'Inventory DB Formulas', formulas:[
+      { name:'Potential Profit', code:'prop("Listed Price") - prop("Buy Price") - (prop("Listed Price") * 0.13)', desc:'Estimates net profit after ~13% platform fees' },
+      { name:'Days in Stock', code:'dateBetween(now(), prop("Date Acquired"), "days")', desc:'Tracks how long each item has been in inventory' },
+      { name:'ROI %', code:'round((prop("Potential Profit") / prop("Buy Price")) * 100)', desc:'Return on investment percentage per item' },
+    ]},
+    { title:'Sales DB Formulas', formulas:[
+      { name:'Net Revenue', code:'prop("Sale Price") - prop("Fees Paid") - prop("Shipping Cost")', desc:'Revenue after platform fees and shipping' },
+      { name:'Profit Margin %', code:'round((prop("Net Profit") / prop("Sale Price")) * 100)', desc:'Profit as a percentage of sale price' },
+      { name:'Days to Sell', code:'dateBetween(prop("Date Sold"), prop("Date Acquired"), "days")', desc:'Sell-through velocity metric' },
+    ]},
+    { title:'Refurb DB Formulas', formulas:[
+      { name:'Total Cost Added', code:'prop("Parts Cost") + (prop("Hours Spent") * prop("Labor Rate"))', desc:'Total repair investment (parts + labor)' },
+      { name:'Value Add %', code:'round((prop("Est. Value Add") / prop("Total Cost Added")) * 100)', desc:'Return on refurb investment' },
+    ]},
+    { title:'Expenses DB Formulas', formulas:[
+      { name:'Monthly Total (filter)', code:'month(prop("Date")) == month(now())', desc:'Filter formula to show only current month expenses' },
+    ]},
+    { title:'P&L Rollups (Setup)', formulas:[
+      { name:'Total COGS', code:'Rollup → Sales DB → COGS field → Sum', desc:'Sum of all cost-of-goods-sold from Sales database' },
+      { name:'Total Revenue', code:'Rollup → Sales DB → Sale Price field → Sum', desc:'Sum of all sale prices from Sales database' },
+      { name:'Total Fees', code:'Rollup → Expenses DB → Amount (Category = Platform Fees) → Sum', desc:'Sum of platform fees filtered by category' },
+      { name:'Total Parts Cost', code:'Rollup → Refurb DB → Parts Cost field → Sum', desc:'Sum of all parts costs from Refurb Log' },
+    ]},
+  ];
+
+  function renderFormulas() {
+    const container = document.getElementById('formulas-container-d9e0');
+    if (!container) return;
+    container.innerHTML = formulaSections.map((section, si) => `
+      <div class="mb-2">
+        <div class="accordion-header formula-accordion" data-section="${si}">
+          <span class="text-sm font-semibold text-txt-100">${section.title}</span>
+          <i data-lucide="chevron-down" class="w-4 h-4 text-txt-400"></i>
+        </div>
+        <div class="accordion-body" data-section-body="${si}">
+          ${section.formulas.map(f => `
+            <div class="mb-4 last:mb-0">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-sm font-medium text-brand">${f.name}</span>
+                <button class="copy-btn formula-copy-btn" data-formula="${escapeHtml(f.code)}"><i data-lucide="copy" class="w-3 h-3 inline mr-1"></i>Copy</button>
+              </div>
+              <div class="prompt-block text-xs mb-1">${escapeHtml(f.code)}</div>
+              <p class="text-xs text-txt-400">${f.desc}</p>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+    refreshIcons();
+    container.querySelectorAll('.formula-accordion').forEach(h => {
+      h.addEventListener('click', () => {
+        const body = container.querySelector(`[data-section-body="${h.dataset.section}"]`);
+        if (body) body.classList.toggle('open');
+      });
+    });
+    container.querySelectorAll('.formula-copy-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(btn.dataset.formula).then(() => {
+          btn.innerHTML = '<i data-lucide="check" class="w-3 h-3 inline mr-1"></i>Copied!';
+          refreshIcons();
+          setTimeout(() => { btn.innerHTML = '<i data-lucide="copy" class="w-3 h-3 inline mr-1"></i>Copy'; refreshIcons(); }, 1500);
+        });
+      });
+    });
+  }
+
+  // ============================================================
+  // SETUP GUIDE
+  // ============================================================
+  const setupPhases = [
+    { title:'Phase 1: Create Database Structure (Day 1)', items:[
+      'Create Inventory Database with all schema fields',
+      'Create Refurb Log Database',
+      'Create Expenses Database',
+      'Create Sales Database',
+      'Create Sourcing Watchlist Database',
+      'Set up Relations between databases',
+    ]},
+    { title:'Phase 2: Build Views & Dashboards (Day 2)', items:[
+      'Create Inventory views: All Items, In Stock, Listed, In Refurb, Sold',
+      'Create Refurb board view (Kanban by Status)',
+      'Create Sales gallery/table with profit sort',
+      'Create Expenses filter by month',
+      'Build Command Center page with linked database blocks',
+    ]},
+    { title:'Phase 3: Formulas & Automations (Day 3)', items:[
+      'Add all formulas from KPI Formulas section',
+      'Set up Notion automations: "When Status → Sold, stamp Date Sold"',
+      'Create recurring templates for Daily Briefing',
+      'Set up Notion AI prompts on key pages',
+    ]},
+    { title:'Phase 4: AI Agent Integration (Day 4)', items:[
+      'Save all Copilot prompts to a "Prompts Library" Notion page',
+      'Create a Notion page for each AI Workflow with embed instructions',
+      'Set up weekly review template with pre-filled data blocks',
+      'Connect Notion Webhooks for advanced automation (optional)',
+    ]},
+    { title:'Phase 5: Go Live (Day 5)', items:[
+      'Enter all existing inventory',
+      'Log historical sales for baseline P&L',
+      'Set watchlist priorities',
+      'Do first Daily Briefing run with Copilot',
+    ]},
+  ];
+
+  let checkedItems = {};
+  const SETUP_STORAGE_KEY = 'hh_setup_checks';
+  try { checkedItems = JSON.parse(localStorage.getItem(SETUP_STORAGE_KEY)) || {}; } catch(e) {}
+
+  function saveChecks() {
+    try { localStorage.setItem(SETUP_STORAGE_KEY, JSON.stringify(checkedItems)); } catch(e) {}
+  }
+
+  function renderSetup() {
+    const container = document.getElementById('setup-checklist-j5k6');
+    if (!container) return;
+    let totalItems = 0, checked = 0;
+    container.innerHTML = setupPhases.map((phase, pi) => {
+      return `<div class="kpi-card mb-4">
+        <h3 class="text-sm font-semibold text-txt-100 mb-3">${phase.title}</h3>
+        <div class="space-y-2">
+          ${phase.items.map((item, ii) => {
+            const key = pi + '-' + ii;
+            totalItems++;
+            const isChecked = !!checkedItems[key];
+            if (isChecked) checked++;
+            return `<label class="flex items-start gap-3 cursor-pointer group">
+              <input type="checkbox" class="setup-check mt-0.5 w-4 h-4 rounded accent-[#f59e0b] cursor-pointer" data-key="${key}" ${isChecked?'checked':''}>
+              <span class="text-sm ${isChecked?'text-txt-400 line-through':'text-txt-200'} group-hover:text-txt-100 transition">${item}</span>
+            </label>`;
+          }).join('')}
+        </div>
+      </div>`;
+    }).join('');
+    updateProgress(checked, totalItems);
+    container.querySelectorAll('.setup-check').forEach(cb => {
+      cb.addEventListener('change', () => {
+        checkedItems[cb.dataset.key] = cb.checked;
+        saveChecks();
+        renderSetup();
+      });
+    });
+  }
+
+  function updateProgress(checked, total) {
+    const pct = total > 0 ? Math.round((checked / total) * 100) : 0;
+    const pctEl = document.getElementById('setup-progress-pct-f1g2');
+    const barEl = document.getElementById('setup-progress-bar-h3i4');
+    if (pctEl) pctEl.textContent = pct + '%';
+    if (barEl) barEl.style.width = pct + '%';
+  }
+
+  // ============================================================
+  // MODALS
+  // ============================================================
+  const modalOverlay = document.getElementById('modal-overlay-l7m8');
+  const modalTitle = document.getElementById('modal-title-n9o0');
+  const modalBody = document.getElementById('modal-body-r3s4');
+
+  function openModal(type) {
+    const configs = {
+      inventory: { title:'Add Inventory', fields:['Device Name','Condition','SKU','Buy Price ($)','Listed Price ($)','Platform','Source','Notes'] },
+      expense: { title:'Log Expense', fields:['Description','Category','Amount ($)','Vendor','Payment Method','Notes'] },
+      sale: { title:'Log Sale', fields:['Device Name','Sale Price ($)','Platform','Fees ($)','Shipping ($)','Notes'] },
+      watchlist: { title:'Add to Watchlist', fields:['Device Name','Target Buy Price','Avg Sell Price','Priority','Source Platforms','Notes'] },
+    };
+    const cfg = configs[type];
+    if (!cfg) return;
+    modalTitle.textContent = cfg.title;
+    modalBody.innerHTML = cfg.fields.map(f => `
+      <div class="mb-3">
+        <label class="form-label">${f}</label>
+        <input type="text" class="form-input" placeholder="Enter ${f.toLowerCase()}">
+      </div>
+    `).join('') + `<div class="flex gap-2 mt-5">
+      <button class="flex-1 py-2 rounded-lg text-sm font-medium bg-brand text-base-900 hover:bg-brand-light transition modal-save-btn">Save Entry</button>
+      <button class="flex-1 py-2 rounded-lg text-sm font-medium bg-card text-txt-300 hover:bg-card-light transition border border-card-border modal-cancel-btn">Cancel</button>
+    </div>`;
+    modalOverlay.classList.add('open');
+    modalBody.querySelector('.modal-save-btn')?.addEventListener('click', () => closeModal());
+    modalBody.querySelector('.modal-cancel-btn')?.addEventListener('click', () => closeModal());
+  }
+
+  function closeModal() {
+    modalOverlay.classList.remove('open');
+  }
+
+  document.getElementById('modal-close-p1q2')?.addEventListener('click', closeModal);
+  modalOverlay?.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
+
+  document.querySelectorAll('.quick-add-btn').forEach(btn => {
+    btn.addEventListener('click', () => openModal(btn.dataset.modal));
+  });
+
+  // ============================================================
+  // COLUMN SORTING (Inventory + Sales)
+  // ============================================================
+  let invSortCol = null, invSortDir = 'asc';
+  document.getElementById('inv-table-p9q0')?.querySelectorAll('th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+      invSortDir = (invSortCol === th.dataset.sort) ? (invSortDir === 'asc' ? 'desc' : 'asc') : 'asc';
+      invSortCol = th.dataset.sort;
+      const key = { name:'name', condition:'condition', buy:'buy', listed:'listed', status:'status' }[invSortCol];
+      if (key) {
+        inventoryData.sort((a,b) => {
+          let va = a[key], vb = b[key];
+          if (typeof va === 'number') return invSortDir === 'asc' ? va - vb : vb - va;
+          return invSortDir === 'asc' ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+        });
+        renderInventory();
+      }
+    });
+  });
+
+  // ============================================================
+  // INIT
+  // ============================================================
+  buildNav();
+  renderInventory();
+  renderRefurb();
+  renderExpenses();
+  renderSales();
+  renderPnL();
+  renderWatchlist();
+  renderAiWorkflows();
+  renderFormulas();
+  renderSetup();
+  </script>
+</body>
+</html>
